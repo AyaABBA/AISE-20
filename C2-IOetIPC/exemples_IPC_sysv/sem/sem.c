@@ -24,7 +24,6 @@ int main( int argc, char ** argv )
 	}
 
 
-	int pid = fork();
 
 	struct sembuf p;
 
@@ -38,7 +37,7 @@ int main( int argc, char ** argv )
 	v.sem_op = 1;
 	v.sem_flg = SEM_UNDO;
 
-
+	int pid = fork();
 
 	if( pid == 0 )
 	{

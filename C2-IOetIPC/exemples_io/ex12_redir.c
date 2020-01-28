@@ -15,7 +15,7 @@ int main(int argc, char ** argv )
 		/* Replace stdout with the file */
 		dup2(out, STDOUT_FILENO);
 		close(out);
-		char * argv[] = {"ls","-la", NULL};
+		char * argv[] = {"cowsay","COUCOU POSIX", NULL};
 		execvp( argv[0], argv);
 	}
 	else

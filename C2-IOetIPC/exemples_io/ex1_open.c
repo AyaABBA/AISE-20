@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 int main(int argc, char **argv)
 {
@@ -11,7 +12,8 @@ int main(int argc, char **argv)
 
 	if( fd < 0)
 	{
-		perror("open");
+		printf("%d == %d\n", errno, EACCES);
+		perror("coucouTLM");
 	}
 
 

@@ -2,20 +2,19 @@
 #include <string.h>
 
 int main(int argc, char ** argv){
-	if(argc != 2 )
+	if(argc != 3 )
 		return 1;
 
-	FILE * fd = fopen(argv[1], "w");
+	FILE * fd = fopen(argv[1], "a");
 
 	if(!fd){
 		perror("fopen");
 		return 1;
 	}
 
-	char data[] = "Hello I/Os\n";
 	size_t cnt;
 
-	cnt = fwrite(data, sizeof(char), strlen(data), fd);
+	cnt = fwrite(argv[2], sizeof(char), strlen(argv[2]), fd);
 	
 	if( cnt == 0)
 	{
