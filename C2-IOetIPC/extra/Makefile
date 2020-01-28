@@ -6,10 +6,11 @@ TARGET=test
 all: $(TARGET)
  
 libppm.so : ppm.c
-    $(CC) $(CFLAGS)  -fpic -shared $^ -o $@
+	$(CC) $(CFLAGS)  -fpic -shared $^ -o $@
  
 test: main.c libppm.so
-    $(CC) $(CFLAGS) $(LDFLAGS) -lppm -L. main.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) main.c -lppm -L. -o $@
  
 clean:
-    rm -fr $(TARGET) *.so
+	rm -fr $(TARGET) *.so
+
