@@ -1,11 +1,13 @@
+#include <fcntl.h>           /* For O_* constants */
+#include <sys/stat.h>        /* For mode constants */
+#include <mqueue.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
 #include <sys/time.h>
+
+#include <mqueue.h>
 
 double get_time()
 {
@@ -17,6 +19,7 @@ double get_time()
 
 #define SIZE 16
 
+
 struct msg_t
 {
 	long type;
@@ -27,19 +30,36 @@ struct msg_t
 
 int main( int argc, char ** argv )
 {
-	int file = msgget(IPC_PRIVATE, IPC_CREAT | 0600);
+	struct mq_attr attr;
 
-	if( file < 0 )
+	attr.mq_maxmsg = 5;
+	attr.mq_msgsize = sizeof(struct msg_t);
+	attr.mq_flags = 0;
+	attr.mq_curmsgs = 0;
+
+
+	mqd_t file1 = mq_open("/pinga", O_RDWR | O_CREAT, 0600, &attr);
+
+	if( file1 < 0 )
 	{
-		perror("msgget");
+		perror("mq_open");
 		return 1;
 	}
 
+	mqd_t file2 = mq_open("/pingb", O_RDWR | O_CREAT, 0600, &attr);
+
+	if( file2 < 0 )
+	{
+		perror("mq_open");
+		return 1;
+	}
 
 	int i;
 
 	struct msg_t m;
 	m.type = 1;
+
+	int prio = 1;
 
 	int pid = fork();
 
@@ -49,12 +69,11 @@ int main( int argc, char ** argv )
 
 		while(!stop)
 		{
-			msgrcv(file, &m, SIZE*sizeof(int), 2, 0);
+			mq_receive(file1, ( char *)&m, sizeof(struct msg_t), &prio);
 			/* Notify end */
 			if( m.data[0] == 0 )
 				stop = 1;
-			m.type = 1;
-			msgsnd(file, &m, SIZE*sizeof(int), 0);
+			mq_send(file2, ( char *)&m, sizeof(struct msg_t), 1);
 		}
 
 	}
@@ -65,9 +84,9 @@ int main( int argc, char ** argv )
 		for( i = 1 ; i <= NUM_MSG ; i++)
 		{
 			m.data[0] = i;
-		        m.type = 2;	
+
 			double start = get_time();
-			int ret = msgsnd(file, &m, SIZE*sizeof(int), 0);
+			int ret = mq_send(file1, ( char *)&m, sizeof(struct msg_t), 1);
 
 			if( ret < 0 )
 			{
@@ -78,21 +97,23 @@ int main( int argc, char ** argv )
 			double end = get_time();
 			total_time += end - start;
 
-			msgrcv(file, &m, SIZE*sizeof(int), 1, 0);
+			mq_receive(file2, ( char *)&m, sizeof(struct msg_t), &prio);
 		}	
 
 		m.data[0] = 0;
-		m.type = 2;
-		msgsnd(file, &m, SIZE*sizeof(int), 0);
+		mq_send(file1, (char *)&m, sizeof(struct msg_t), 1);
 
 		wait( NULL );
 
 		fprintf(stderr, "Pingpong takes %g usec Bandwidth is %g MB/s",
 				total_time/NUM_MSG*1e6, (double)(SIZE*NUM_MSG*sizeof(int))/(total_time*1024.0*1024.0));
 
-		msgctl(file, IPC_RMID, NULL);		
+		mq_close(file1);
+		mq_close(file2);
+		
+		mq_unlink("/pinga");
+		mq_unlink("/pingb");
 	}
-
 
 	return 0;
 }
